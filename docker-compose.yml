@@ -1,0 +1,37 @@
+services:
+  ingestion-api:
+    build: ./ingestion-service
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+      - kafka
+    
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+    
+  stream-processor:
+    build: ./stream-processor
+    depends_on:
+      - redis
+    
+  batch-processor:
+    build: ./batch-processor
+    depends_on:
+      - kafka
+      - timescaledb
+    
+  timescaledb:
+    image: timescale/timescaledb:latest
+    environment:
+      POSTGRES_DB: railway_data
+    volumes:
+      - timeseries_data:/var/lib/postgresql/data
