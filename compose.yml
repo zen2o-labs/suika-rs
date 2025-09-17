@@ -14,7 +14,7 @@ services:
       - APP__SERVER__PORT=8080
       - APP__REDIS__URL=redis://redis:6379
       - APP__REDIS__STREAM_MAX_LEN=10000
-      - APP__KAFKA__BOOTSTRAP_SERVERS=kafka:9092
+      - APP__KAFKA__BOOTSTRAP_SERVERS=kafka-queue:9092
       - APP__KAFKA__BATCH_TOPIC=batch_processing_topic
       - APP__KAFKA__TIMEOUT_MS=5000
       - APP__PROCESSING__BATCH_SIZE=1000
@@ -26,7 +26,7 @@ services:
     networks:
       - ingestion-network
     restart: unless-stopped
-
+  
   redis:
     image: redis:7-alpine
     ports:
@@ -38,7 +38,8 @@ services:
       - ingestion-network
     restart: unless-stopped
 
-  kafka:
+  # Kafka Queue Manager
+  kafka-queue:
     image: confluentinc/cp-kafka:latest
     ports:
       - "9092:9092"
@@ -49,7 +50,7 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
       KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"  
-      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER" 
       KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
       KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
@@ -61,7 +62,30 @@ services:
     networks:
       - ingestion-network
     restart: unless-stopped
-
+  
+  # Kafka Event Bus
+  kafka-eventbus:
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - "9093:9093"  # Different port
+    environment:
+      KAFKA_KRAFT_MODE: "true"
+      KAFKA_PROCESS_ROLES: "controller,broker"
+      KAFKA_NODE_ID: 2  # Different node ID
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "2@kafka-eventbus:9094"
+      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9093,CONTROLLER://0.0.0.0:9094"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-eventbus:9093"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_DIRS: "/var/lib/kafka/data"
+      CLUSTER_ID: "railway-eventbus-cluster-001"
+    volumes:
+      - kafka_eventbus_data:/var/lib/kafka/data
+    networks:
+      - ingestion-network
+        
   # Kafka UI for debugging
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
