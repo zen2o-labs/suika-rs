@@ -19,3 +19,4 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 anyhow = "1.0"
 thiserror = "1.0"
 config = "0.14"
+axum-extra = { version = "0.9", features = ["typed-header"] }

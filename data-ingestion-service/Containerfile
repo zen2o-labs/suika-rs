@@ -1,5 +1,19 @@
-# Build stage
-FROM rust:latest as builder
+# Build stage - use same base as runtime
+FROM debian:bookworm-slim as builder
+
+# Install Rust and build dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    build-essential \
+    cmake \
+    pkg-config \
+    libssl-dev \
+    && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+    && . $HOME/.cargo/env \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add Rust to PATH
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /app
 
@@ -17,7 +31,7 @@ COPY src ./src
 # Build for release
 RUN cargo build --release
 
-# Runtime stage
+# Runtime stage - same base as builder
 FROM debian:bookworm-slim
 
 # Install runtime dependencies

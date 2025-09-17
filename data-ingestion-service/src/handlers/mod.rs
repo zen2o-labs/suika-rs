@@ -9,3 +9,10 @@ pub fn create_router() -> Router<AppState> {
         .merge(ingestion::routes())
         .merge(health::routes())
 }
+
+pub fn create_router_with_auth() -> Router<AppState> {
+    Router::new()
+        .merge(ingestion::routes())
+        .merge(health::routes())
+}
+

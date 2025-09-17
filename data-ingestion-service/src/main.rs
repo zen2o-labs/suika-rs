@@ -1,10 +1,11 @@
 use data_ingestion_service::{
-    config::Settings,
-    handlers::create_router,
-    clients::AppState,
-    middleware::logging::init_tracing,
+    clients::AppState, 
+    config::Settings, 
+    handlers::create_router, 
+    middleware::{auth, logging::init_tracing}
 };
 use tower_http::cors::CorsLayer;
+use axum::middleware;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -19,8 +20,12 @@ async fn main() -> anyhow::Result<()> {
 
     // Build application router
     let app = create_router()
-        .layer(CorsLayer::permissive())
-        .with_state(state);
+            .route_layer(middleware::from_fn_with_state(
+                state.clone(),
+                auth::api_key_auth,
+            ))
+            .layer(CorsLayer::permissive())
+            .with_state(state);
 
     // Start server
     let bind_address = format!("{}:{}", settings.server.host, settings.server.port);

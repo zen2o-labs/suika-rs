@@ -23,6 +23,9 @@ pub enum AppError {
     #[error("System time error: {0}")]
     SystemTimeError(#[from] std::time::SystemTimeError),
     
+    #[error("Unauthorized: {0}")]
+    Unauthorized(String),  // Add this
+    
     #[error("Internal server error: {0}")]
     InternalError(String),
 }
@@ -35,6 +38,7 @@ impl IntoResponse for AppError {
             AppError::SerializationError(e) => (StatusCode::BAD_REQUEST, e.to_string()),
             AppError::ConfigError(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
             AppError::SystemTimeError(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+            AppError::Unauthorized(e) => (StatusCode::UNAUTHORIZED, e),  // Add this
             AppError::InternalError(e) => (StatusCode::INTERNAL_SERVER_ERROR, e),
         };
 
